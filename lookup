@@ -1,0 +1,59 @@
+#! /usr/bin/awk -f
+
+function index_load(file,    \
+    word, page, pages, n_records, n_words, n_pages, key, key_parts,
+    t_0, t_1, t_d \
+) {
+    cmd_date = "date +%s"
+    cmd_date | getline t_0
+    close(cmd_date)
+    printf("Loading %s...\n", file) \
+        > "/dev/stderr"
+    while (getline < file) {
+        word = $1
+        page = $2
+        _count_hits_per_keyword_per_page[word, page]++
+        n_records++
+        pages[page] = 1
+    }
+    close(file)
+    for (key in _count_hits_per_keyword_per_page) {
+        split(key, key_parts, SUBSEP)
+        word = key_parts[1]
+        page = key_parts[2]
+        _list_pages_per_keyword[word, ++_count_pages_per_keyword[word]] = page
+    }
+    cmd_date | getline t_1
+    close(cmd_date)
+    n_words = length(_count_pages_per_keyword)
+    n_pages = length(pages)
+    t_d = t_1 - t_0
+    printf("Loading completed in %d seconds.\n", t_d) \
+       > "/dev/stderr"
+    printf("records: %d, words: %d, pages: %d.\n", n_records, n_words, n_pages)\
+        > "/dev/stderr"
+}
+
+function index_lookup(word,    n, i) {
+    n = _count_pages_per_keyword[word]
+    printf("==> results: %d\n", n)
+    for (i=1; i<=n; i++) {
+        printf("      %d) %s\n", i, _list_pages_per_keyword[word, i])
+    }
+}
+
+function prompt() {
+    printf("? ")
+}
+
+BEGIN {
+    Index_File = Index_File ? Index_File : "./index.dat"
+    index_load(Index_File)
+    prompt()
+}
+
+{
+    word = $1
+    index_lookup(word)
+    prompt()
+}

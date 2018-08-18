@@ -1,0 +1,22 @@
+#! /bin/bash
+
+filepath="$1"
+man_page=$(basename "$filepath" .gz)
+
+parse() {
+    troff -a
+}
+
+break_into_words() {
+    awk -F '[^a-zA-Z0-9]+' -v RS=' ' '{ for (i=1; i<=NF; i++) print $i }'
+}
+
+drop_blanks() {
+    egrep -v '^ *$'
+}
+
+associate() {
+    awk -v man_page="$man_page" '{print($1, man_page)}'
+}
+
+zcat "$filepath" | parse | break_into_words | drop_blanks | associate

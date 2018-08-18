@@ -1,0 +1,14 @@
+#! /bin/bash
+
+( find \
+    /usr/share/man/man[0-9] \
+    -type f \
+    -name '*.gz' \
+    -print \
+| xargs \
+    -P $(nproc) \
+    -I % \
+    ./index_one % \
+) \
+2> errors.log \
+1> index.dat
